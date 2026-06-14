@@ -1,0 +1,33 @@
+# --- 機密情報（最重要・GitHubトークン等の漏洩防止）---
+.env
+*.local
+config.yaml
+config.yml
+config.json
+secrets.*
+
+# --- Goビルド成果物 ---
+go-harvester
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# --- テスト・カバレッジ ---
+*.test
+*.out
+coverage.html
+
+# --- 個人メモ ---
+docs/
+
+# --- エディタ / IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- OS生成ファイル ---
+.DS_Store
+Thumbs.db
