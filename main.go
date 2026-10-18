@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"go-harvester/config"
@@ -36,6 +39,9 @@ func fetchAll(fetchers []fetcher.Fetcher) []fetchResult {
 }
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	cfg, err := config.Load("config.json")
 	if err != nil {
 		log.Fatalf("設定の読み込みに失敗: %v", err)
@@ -84,30 +90,43 @@ func main() {
 	defer ticker.Stop()
 	log.Printf("%d秒ごとに見回る（止めるときは Ctrl+C）", cfg.Interval)
 
-	for range ticker.C {
-		const maxNotify = 5
-		tried := 0
-		for _, r := range fetchAll(fetchers) {
-			if r.Err != nil {
-				log.Printf("[%s] 失敗: %v", r.Name, r.Err)
-				continue
-			}
-			fresh := f.Apply(r.Items)
-			if len(fresh) == 0 {
-				continue
-			}
-			log.Printf("[%s] 新着%d件", r.Name, len(fresh))
-			for _, item := range fresh {
-				fmt.Printf("  - %s\n", item.Title)
-				if cfg.Ntfy.Topic == "" || tried >= maxNotify {
-					continue
-				}
-				tried++
-				err := n.Notify(item)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf("止める合図を受けた。見回りを終える")
+			return
 
-				if err != nil {
-					log.Printf("[%s] 通知失敗: %v", r.Name, err)
-				}
+		case <-ticker.C:
+			patrol(fetchers, f, n, cfg.Ntfy.Topic != "")
+		}
+	}
+}
+
+// patrol は、一周見回り、新着を通知する（notify が false なら表示のみ）。
+// 第08講で main の for range ticker.C の中に書いた中身を、そのまま関数へ移した。
+func patrol(fetchers []fetcher.Fetcher, f filter.Filter, n notifier.Notifier, notify bool) {
+	const maxNotify = 5
+	tried := 0
+	for _, r := range fetchAll(fetchers) {
+		if r.Err != nil {
+			log.Printf("[%s] 失敗: %v", r.Name, r.Err)
+			continue
+		}
+		fresh := f.Apply(r.Items)
+		if len(fresh) == 0 {
+			continue
+		}
+		log.Printf("[%s] 新着%d件", r.Name, len(fresh))
+		for _, item := range fresh {
+			fmt.Printf("  - %s\n", item.Title)
+			if !notify || tried >= maxNotify {
+				continue
+			}
+			tried++
+			err := n.Notify(item)
+
+			if err != nil {
+				log.Printf("[%s] 通知失敗: %v", r.Name, err)
 			}
 		}
 	}
