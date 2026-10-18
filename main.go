@@ -24,6 +24,7 @@ func main() {
 		RSS: []config.RSSConfig{
 			{Name: "zenn", URL: "https://zenn.dev/feed"},
 			{Name: "hackernews", URL: "https://news.ycombinator.com/rss"},
+			{Name: "zenn-again", URL: "https://zenn.dev/feed"},
 		},
 	}
 
@@ -34,6 +35,7 @@ func main() {
 	}
 
 	var f filter.Filter
+	f = filter.NewSeenFilter()
 
 	var n notifier.Notifier
 
@@ -53,14 +55,14 @@ func main() {
 			log.Printf("[%s] 失敗: %v", r.Name, r.Err)
 			continue
 		}
-		fmt.Printf("[%s] %d件\n", r.Name, len(r.Items))
-		for _, item := range r.Items {
+		fresh := f.Apply(r.Items)
+		fmt.Printf("[%s] %d件中 新着%d件\n", r.Name, len(r.Items), len(fresh))
+		for _, item := range fresh {
 			fmt.Printf("  - %s\n", item.Title)
 		}
 	}
 
 	fmt.Printf("所要: %v\n", time.Since(start))
 
-	_ = f
 	_ = n
 }
