@@ -1,6 +1,7 @@
 package notifier
 
 import (
+	"fmt"
 	"go-harvester/fetcher"
 	"net/http"
 	"strings"
@@ -26,6 +27,10 @@ func (n *NtfyNotifier) Notify(item fetcher.Item) error {
 	}
 
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ntfy: unexpected status %d", resp.StatusCode)
+	}
 
 	return nil
 }
