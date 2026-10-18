@@ -1,0 +1,8 @@
+{
+  "interval": 300,
+  "rss": [
+    { "name": "zenn", "url": "https://zenn.dev/feed" },
+    { "name": "hackernews", "url": "https://news.ycombinator.com/rss" }
+  ],
+  "ntfy": { "url": "https://ntfy.sh" }
+}

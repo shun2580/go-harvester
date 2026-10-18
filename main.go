@@ -36,15 +36,13 @@ func fetchAll(fetchers []fetcher.Fetcher) []fetchResult {
 }
 
 func main() {
-	cfg := config.Config{
-		Interval: 300,
-		GitHub:   config.GitHubConfig{Token: os.Getenv("GITHUB_TOKEN")},
-		RSS: []config.RSSConfig{
-			{Name: "zenn", URL: "https://zenn.dev/feed"},
-			{Name: "hackernews", URL: "https://news.ycombinator.com/rss"},
-		},
-		Ntfy: config.NtfyConfig{URL: "https://ntfy.sh", Topic: os.Getenv("NTFY_TOPIC")},
+	cfg, err := config.Load("config.json")
+	if err != nil {
+		log.Fatalf("設定の読み込みに失敗: %v", err)
 	}
+
+	cfg.GitHub.Token = os.Getenv("GITHUB_TOKEN")
+	cfg.Ntfy.Topic = os.Getenv("NTFY_TOPIC")
 
 	http.DefaultClient.Timeout = 10 * time.Second
 
